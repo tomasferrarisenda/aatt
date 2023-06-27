@@ -1,0 +1,62 @@
+name: deploy-infra
+
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-latest' 
+  # If you are using a self-hosted agent, comment out the previous line and uncomment the following three
+  # name: <agent-pool-name> # Insert here the name of the agent pool you created
+  # demands:
+  #   - agent.name -equals <agent-name> # Insert here the name of the agent you created
+
+variables:
+  AWS_REGION: us-east-2 # This value was modified by the initial-setup python script
+
+steps:
+- task: TerraformInstaller@0
+  displayName: Install terraform
+  inputs:
+    terraformVersion: '1.4.6'
+
+- task: TerraformCLI@0
+  displayName: 'Terraform Init Backend'
+  inputs:
+    command: init
+    workingDirectory: 'terraform/backend'
+    providerServiceAws: 'aws' 
+    providerAwsRegion: $(AWS_REGION) 
+
+# This step will fail if the infrastructure was successfully deployed in a prevous build
+- task: TerraformCLI@0
+  displayName: 'Terraform Apply Backend'
+  inputs:
+    command: apply
+    workingDirectory: 'terraform/backend'
+    providerServiceAws: 'aws' 
+    providerAwsRegion: $(AWS_REGION) 
+  continueOnError: true
+
+- script: cp terraform/backend/terraform.tfstate terraform/aws
+  displayName: 'Move terraform.tfstate to /terraform/aws/ directory'
+  condition: succeeded() # This will make this step be skipped if the previous step failed
+
+- task: TerraformCLI@0
+  displayName: 'Terraform Init Infra'
+  condition: always()
+  inputs:
+    command: init
+    workingDirectory: 'terraform/aws'
+    backendType: aws 
+    backendServiceAws: aws 
+    providerServiceAws: 'aws' 
+    providerAwsRegion: $(AWS_REGION) 
+    commandOptions: '-force-copy'
+
+- task: TerraformCLI@0
+  displayName: 'Terraform Apply Infra'
+  condition: always()
+  inputs:
+    command: apply
+    workingDirectory: 'terraform/aws'
+    providerServiceAws: 'aws' 
+    providerAwsRegion: $(AWS_REGION) 

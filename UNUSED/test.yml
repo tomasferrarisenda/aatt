@@ -1,0 +1,40 @@
+name: test
+
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-latest' 
+  # If you are using a self-hosted agent, comment out the previous line and uncomment the following three
+  # name: <agent-pool-name> # Insert here the name of the agent pool you created
+  # demands:
+  #   - agent.name -equals <agent-name> # Insert here the name of the agent you created
+variables:
+  - name: VARIABLE1
+    value: "HOLA1"
+  - name: VARIABLE2
+    value: "HOLA2"
+  - name: VARIABLE3
+    value: "HOLA3"
+  - group: group
+
+
+
+steps:
+
+
+- script: |
+    echo 'this is $(VARIABLE1)'
+  #  echo "fdgsdfgsg" > ~/.aws/credentials
+  displayName: 'Step 1'
+  
+- script: echo 'this is $(VARIABLE2)'
+  displayName: 'Step 2 should run'
+  condition: succeeded()
+
+- script: echo 'this is $(STORM)'
+  displayName: 'Step 3 should run'
+  condition: always()
+
+- script: echo 'this is $(VARIABLE3)'
+  displayName: 'Step 4????'
+  #condition: succeeded()
